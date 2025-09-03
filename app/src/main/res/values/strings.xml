@@ -5,4 +5,7 @@
     <string name="initial_time_display">25:00</string>
     <string name="reset">Reset</string>
     <string name="start_break">Start Break</string>
+    <string name="work_session">Work Session</string>
+    <string name="break_session">Break Session</string>
+    <string name="press_start_button">Press Start button</string>
 </resources>
