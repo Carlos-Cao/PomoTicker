@@ -24,6 +24,8 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean timerRunning;
 
+    private TextView textViewSessionLabel;
+
     private boolean isWorkTimer = true;
 
     private long timeLeftInMillis = WORK_TIME_IN_MILLIS;
@@ -33,11 +35,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        textViewSessionLabel = findViewById(R.id.text_view_session_label);
         textViewCountdown = findViewById(R.id.text_view_countdown);
         buttonStartPause = findViewById(R.id.button_start_pause);
         Button buttonReset = findViewById(R.id.button_reset);
         buttonStartBreak = findViewById(R.id.button_start_break);
-
+        updateSessionLabel();
         updateCountDownText();
         buttonStartBreak.setEnabled(false);
 
@@ -69,6 +72,13 @@ public class MainActivity extends AppCompatActivity {
                 if (isWorkTimer) {
                     buttonStartBreak.setEnabled(true);
                     buttonStartPause.setEnabled(false);
+                } else {
+                    isWorkTimer = true;
+                    timeLeftInMillis = WORK_TIME_IN_MILLIS;
+                    updateSessionLabel();
+                    updateCountDownText();
+                    buttonStartPause.setEnabled(true);
+                    buttonStartBreak.setEnabled(false);
                 }
             }
         }.start();
@@ -96,15 +106,26 @@ public class MainActivity extends AppCompatActivity {
         pauseTimer();
         buttonStartPause.setEnabled(true);
         buttonStartBreak.setEnabled(false);
+        updateSessionLabel();
+
     }
 
     private void startBreak() {
         isWorkTimer = false;
         timeLeftInMillis = BREAK_TIME_IN_MILLIS;
+        updateSessionLabel();
         updateCountDownText();
         buttonStartPause.setEnabled(true);
         buttonStartBreak.setEnabled(false);
         startTimer();
+    }
+
+    private void updateSessionLabel() {
+        if (isWorkTimer) {
+            textViewSessionLabel.setText(getResources().getString(R.string.work_session));
+        } else {
+            textViewSessionLabel.setText(getResources().getString(R.string.break_session));
+        }
     }
 
     private void updateCountDownText() {
