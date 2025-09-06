@@ -1,10 +1,17 @@
 package com.example.pomoticker;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.widget.Button;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 
 import java.util.Locale;
 
@@ -34,6 +41,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1);
+            }
+        }
 
         textViewSessionLabel = findViewById(R.id.text_view_session_label);
         textViewCountdown = findViewById(R.id.text_view_countdown);
@@ -72,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
                 if (isWorkTimer) {
                     buttonStartBreak.setEnabled(true);
                     buttonStartPause.setEnabled(false);
+                    sendSessionFinishedNotification("Work");
                 } else {
                     isWorkTimer = true;
                     timeLeftInMillis = WORK_TIME_IN_MILLIS;
@@ -79,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
                     updateCountDownText();
                     buttonStartPause.setEnabled(true);
                     buttonStartBreak.setEnabled(false);
+                    sendSessionFinishedNotification("Break");
                 }
             }
         }.start();
@@ -133,5 +150,28 @@ public class MainActivity extends AppCompatActivity {
         int seconds = (int) (timeLeftInMillis / 1000) % 60;
         String timeFormatted = String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds);
         textViewCountdown.setText(timeFormatted);
+    }
+
+    private void sendSessionFinishedNotification(String sessionType) {
+        String channelId = "pomodoro_channel";
+        String channelName = "Pomodoro Timer";
+        String message = sessionType + " session finished!";
+
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    channelId, channelName, NotificationManager.IMPORTANCE_DEFAULT);
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentTitle("Pomodoro Timer")
+                .setContentText(message)
+                .setAutoCancel(true);
+
+        notificationManager.notify(sessionType.hashCode(), builder.build());
     }
 }
