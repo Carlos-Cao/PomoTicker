@@ -124,7 +124,6 @@ public class MainActivity extends AppCompatActivity {
         buttonStartPause.setEnabled(true);
         buttonStartBreak.setEnabled(false);
         updateSessionLabel();
-
     }
 
     private void startBreak() {
