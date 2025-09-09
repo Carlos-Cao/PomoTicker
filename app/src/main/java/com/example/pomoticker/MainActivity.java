@@ -13,29 +13,21 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
-import java.util.Locale;
-
 public class MainActivity extends AppCompatActivity {
 
-    private static final long WORK_TIME_IN_MILLIS = 1500000; // 25 minutes
-
-    private static final long BREAK_TIME_IN_MILLIS = 300000; // 5 minutes
-
     private TextView textViewCountdown;
+
+    private TextView textViewSessionLabel;
 
     private Button buttonStartPause;
 
     private Button buttonStartBreak;
 
+    private PomodoroTimer pomodoroTimer;
+
     private CountDownTimer countDownTimer;
 
     private boolean timerRunning;
-
-    private TextView textViewSessionLabel;
-
-    private boolean isWorkTimer = true;
-
-    private long timeLeftInMillis = WORK_TIME_IN_MILLIS;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,13 +42,14 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+        pomodoroTimer = new PomodoroTimer();
+
         textViewSessionLabel = findViewById(R.id.text_view_session_label);
         textViewCountdown = findViewById(R.id.text_view_countdown);
         buttonStartPause = findViewById(R.id.button_start_pause);
         Button buttonReset = findViewById(R.id.button_reset);
         buttonStartBreak = findViewById(R.id.button_start_break);
-        updateSessionLabel();
-        updateCountDownText();
+        updateUI();
         buttonStartBreak.setEnabled(false);
 
         buttonStartPause.setOnClickListener(v -> {
@@ -73,26 +66,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startTimer() {
-        countDownTimer = new CountDownTimer(timeLeftInMillis, 1000) {
+        countDownTimer = new CountDownTimer(pomodoroTimer.getTimeLeftInMillis(), 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
-                timeLeftInMillis = millisUntilFinished;
-                updateCountDownText();
+                pomodoroTimer.setTimeLeftInMillis(millisUntilFinished);
+                updateCountdownText();
             }
 
             @Override
             public void onFinish() {
                 timerRunning = false;
-                buttonStartPause.setText(getResources().getString(R.string.start));
-                if (isWorkTimer) {
+                buttonStartPause.setText(getString(R.string.start));
+                if (pomodoroTimer.isWorkTimer()) {
                     buttonStartBreak.setEnabled(true);
                     buttonStartPause.setEnabled(false);
                     sendSessionFinishedNotification("Work");
                 } else {
-                    isWorkTimer = true;
-                    timeLeftInMillis = WORK_TIME_IN_MILLIS;
-                    updateSessionLabel();
-                    updateCountDownText();
+                    pomodoroTimer.switchToWork();
+                    updateUI();
                     buttonStartPause.setEnabled(true);
                     buttonStartBreak.setEnabled(false);
                     sendSessionFinishedNotification("Break");
@@ -101,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
         }.start();
 
         timerRunning = true;
-        buttonStartPause.setText(getResources().getString(R.string.pause));
+        buttonStartPause.setText(getString(R.string.pause));
         buttonStartBreak.setEnabled(false);
     }
 
@@ -110,45 +101,36 @@ public class MainActivity extends AppCompatActivity {
             countDownTimer.cancel();
         }
         timerRunning = false;
-        buttonStartPause.setText(getResources().getString(R.string.start));
+        buttonStartPause.setText(getString(R.string.start));
     }
 
     private void resetTimer() {
-        if (isWorkTimer) {
-            timeLeftInMillis = WORK_TIME_IN_MILLIS;
-        } else {
-            timeLeftInMillis = BREAK_TIME_IN_MILLIS;
-        }
-        updateCountDownText();
+        pomodoroTimer.reset();
+        updateUI();
         pauseTimer();
         buttonStartPause.setEnabled(true);
         buttonStartBreak.setEnabled(false);
-        updateSessionLabel();
     }
 
     private void startBreak() {
-        isWorkTimer = false;
-        timeLeftInMillis = BREAK_TIME_IN_MILLIS;
-        updateSessionLabel();
-        updateCountDownText();
+        pomodoroTimer.startBreak();
+        updateUI();
         buttonStartPause.setEnabled(true);
         buttonStartBreak.setEnabled(false);
         startTimer();
     }
 
-    private void updateSessionLabel() {
-        if (isWorkTimer) {
-            textViewSessionLabel.setText(getResources().getString(R.string.work_session));
-        } else {
-            textViewSessionLabel.setText(getResources().getString(R.string.break_session));
-        }
+    private void updateUI() {
+        updateSessionLabel();
+        updateCountdownText();
     }
 
-    private void updateCountDownText() {
-        int minutes = (int) (timeLeftInMillis / 1000) / 60;
-        int seconds = (int) (timeLeftInMillis / 1000) % 60;
-        String timeFormatted = String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds);
-        textViewCountdown.setText(timeFormatted);
+    private void updateSessionLabel() {
+        textViewSessionLabel.setText(pomodoroTimer.getSessionLabel());
+    }
+
+    private void updateCountdownText() {
+        textViewCountdown.setText(pomodoroTimer.getFormattedTime());
     }
 
     private void sendSessionFinishedNotification(String sessionType) {
